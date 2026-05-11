@@ -1,0 +1,112 @@
+#include<bits/stdc++.h>
+#include<omp.h>
+#include<chrono>
+using namespace std;
+using namespace std::chrono;
+
+int* generateArray(int N) {
+    int *arr = new int[N];
+    for(int i = 0; i < N; i++) {
+        arr[i] = rand() % 1000;
+    }
+    return arr;
+}
+
+void printArray(int* arr, int N) {
+    cout << "Input array" << endl;
+    for(int i = 0; i < N; i++) {
+        cout << arr[i] << " ";
+    }
+    cout << endl;
+}
+
+void parallelCalculations(int* arr, int N, int& min_val, int& max_val, int& sum, double& time_taken) {
+    min_val = INT_MAX;
+    max_val = INT_MIN;
+    sum = 0;
+    
+    auto start_time = high_resolution_clock::now();
+    
+    #pragma omp parallel for reduction(min:min_val)
+    for(int i = 0; i < N; i++) {
+        if(arr[i] < min_val) {
+            min_val = arr[i];
+        }
+    }
+    
+    #pragma omp parallel for reduction(max:max_val)
+    for(int i = 0; i < N; i++) {
+        if(arr[i] > max_val) {
+            max_val = arr[i];
+        }
+    }
+    
+    #pragma omp parallel for reduction(+:sum)
+    for(int i = 0; i < N; i++) {
+        sum += arr[i];
+    }
+    
+    auto end_time = high_resolution_clock::now();
+    duration<double> duration = end_time - start_time;
+    time_taken = duration.count();
+}
+
+void sequentialCalculations(int* arr, int N, int& min_val, int& max_val, int& sum, double& time_taken) {
+    min_val = INT_MAX;
+    max_val = INT_MIN;
+    sum = 0;
+    
+    auto start_time = high_resolution_clock::now();
+    
+    for(int i = 0; i < N; i++) {
+        if(arr[i] < min_val) {
+            min_val = arr[i];
+        }
+    }
+    
+    for(int i = 0; i < N; i++) {
+        if(arr[i] > max_val) {
+            max_val = arr[i];
+        }
+    }
+    
+    for(int i = 0; i < N; i++) {
+        sum += arr[i];
+    }
+    
+    auto end_time = high_resolution_clock::now();
+    duration<double> duration = end_time - start_time;
+    time_taken = duration.count();
+}
+
+void displayResults(int min_val, int max_val, int sum, double avg, double parallel_time, double sequential_time) {
+    cout << "Min value: " << min_val << endl;
+    cout << "Max Value: " << max_val << endl;
+    cout << "Sum: " << sum << endl;
+    cout << "Avg: " << avg << endl;
+    cout << "Execution time for Parallel algo's " << duration_cast<microseconds>(duration<double>(parallel_time)).count() << " microseconds" << endl;
+    cout << "Execution time for Sequential algo's " << duration_cast<microseconds>(duration<double>(sequential_time)).count() << " microseconds" << endl;
+}
+
+int main() {
+    int N;
+    cout << "Enter the size of the array" << endl;
+    cin >> N;
+    
+    int* arr = generateArray(N);
+    printArray(arr, N);
+    
+    int min_val, max_val, sum;
+    double parallel_time, sequential_time;
+    
+    parallelCalculations(arr, N, min_val, max_val, sum, parallel_time);
+    double avg = double(sum) / N;
+    
+    sequentialCalculations(arr, N, min_val, max_val, sum, sequential_time);
+    avg = double(sum) / N;
+    
+    displayResults(min_val, max_val, sum, avg, parallel_time, sequential_time);
+    
+    delete[] arr;
+    return 0;
+}
